@@ -1,16 +1,19 @@
 #include "MainWindow.h"
 #include "MenuBar.h"
+#include "MapView.h"
+#include "SeismicEventTable.h"
 
 #include <QStatusBar>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTabWidget>
-#include <QScrollArea>
 #include <QSplitter>
 #include <QApplication>
 #include <QFile>
 #include <QTextStream>
+#include <QPropertyAnimation>
+#include <QParallelAnimationGroup>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
@@ -18,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
 void MainWindow::setupUI() {
     setWindowTitle("apakah ini my-program");
-    resize(1920, 1080);
+    resize(1280, 720); // 720p untuk testing
 
     m_menuBar = new MenuBar(this);
     setMenuBar(m_menuBar);
@@ -28,7 +31,6 @@ void MainWindow::setupUI() {
     setupStatusBar();
     setupCentralWidget();
 
-    // Muat tema default
     loadTheme("dark");
 }
 
@@ -42,46 +44,57 @@ void MainWindow::setupCentralWidget() {
     m_mainTabs = new QTabWidget(this);
     connect(m_mainTabs, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
 
-    // Tab Monitoring
+    // ========== TAB MONITORING ==========
     auto *monitoringTab = new QWidget();
     auto *monitorLayout = new QHBoxLayout(monitoringTab);
+    monitorLayout->setContentsMargins(0, 0, 0, 0);
+    monitorLayout->setSpacing(0);
 
     // Splitter utama: kiri (8) dan kanan (3)
     m_overallSplitter = new QSplitter(Qt::Horizontal);
-    m_overallSplitter->setHandleWidth(5);
+    m_overallSplitter->setHandleWidth(0); // Hilangkan resize handle
+    m_overallSplitter->setChildrenCollapsible(false);
 
-    // --- PANEL KIRI (MAIN PANEL + SIDE PANEL BAWAH) ---
-    m_leftPanel = new QSplitter(Qt::Vertical);
-    m_leftPanel->setHandleWidth(5);
+    // --- PANEL KIRI ---
+    auto *leftContainer = new QWidget();
+    auto *leftLayout = new QVBoxLayout(leftContainer);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(0);
 
-    // 1. Main Panel Atas (FIXED HEIGHT)
+    // Main Panel Atas
     m_mainPanelTopLeft = new QLabel("Network Status / Station List");
     m_mainPanelTopLeft->setAlignment(Qt::AlignCenter);
     m_mainPanelTopLeft->setStyleSheet("background-color: #44444E; border: 1px solid #715A5A;");
-    m_mainPanelTopLeft->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    m_mainPanelTopLeft->setMinimumHeight(200);
-    m_mainPanelTopLeft->setMaximumHeight(200);
+    m_mainPanelTopLeft->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    // 2. Side Panel Bawah (isi sub-tabs, bisa di-resize)
-    auto *bottomLeftBox = new QTabWidget(); // Sub-tabs: peta, traces, dll
-    QStringList subTabs = {"Peta", "Traces", "Arrival", "Forecast Zones", "Bulletin", "Tambahan"};
+    // Side Panel Bawah dengan sub-tabs
+    m_bottomLeftTabs = new QTabWidget();
+    
+    // Tab Peta dengan MapView
+    m_mapView = new MapView();
+    m_bottomLeftTabs->addTab(m_mapView, "Peta");
+    
+    // Tab lainnya
+    QStringList subTabs = {"Traces", "Arrival", "Forecast Zones", "Bulletin", "Tambahan"};
     for (const QString &tabName : subTabs) {
         auto *label = new QLabel(tabName + " Content Area");
         label->setAlignment(Qt::AlignCenter);
         label->setStyleSheet("background-color: #37353E; color: white;");
-        bottomLeftBox->addTab(label, tabName);
+        m_bottomLeftTabs->addTab(label, tabName);
     }
+    
+    connect(m_bottomLeftTabs, &QTabWidget::currentChanged, this, &MainWindow::onSubTabChanged);
 
-    m_leftPanel->addWidget(m_mainPanelTopLeft);
-    m_leftPanel->addWidget(bottomLeftBox);
-    m_leftPanel->setStretchFactor(0, 0); // Main panel tidak stretch (fixed)
-    m_leftPanel->setStretchFactor(1, 1); // Side panel bawah bisa stretch
+    // Set ratio 3:8 untuk main panel : side panel
+    leftLayout->addWidget(m_mainPanelTopLeft, 3);
+    leftLayout->addWidget(m_bottomLeftTabs, 8);
 
-    m_overallSplitter->addWidget(m_leftPanel);
+    m_overallSplitter->addWidget(leftContainer);
 
-    // --- PANEL KANAN (DATABASE + LAYER) ---
+    // --- PANEL KANAN ---
     m_rightPanel = new QSplitter(Qt::Vertical);
     m_rightPanel->setHandleWidth(5);
+    m_rightPanel->setChildrenCollapsible(false);
 
     auto *dbBox = new QLabel("Database-Tsunami");
     dbBox->setAlignment(Qt::AlignCenter);
@@ -96,47 +109,85 @@ void MainWindow::setupCentralWidget() {
     m_rightPanel->setStretchFactor(0, 1);
     m_rightPanel->setStretchFactor(1, 1);
 
-    // Bungkus panel kanan dalam scroll area
-    auto *scrollArea = new QScrollArea();
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setWidget(m_rightPanel);
-    m_overallSplitter->addWidget(scrollArea);
+    m_overallSplitter->addWidget(m_rightPanel);
 
-    // Atur rasio 8:3 (total 11)
-    // Kiri = 8/11, Kanan = 3/11
-    int totalWidth = 1920;
-    int leftWidth = (int)(totalWidth * (8.0 / 11.0));
-    int rightWidth = (int)(totalWidth * (3.0 / 11.0));
-    m_overallSplitter->setSizes({leftWidth, rightWidth});
+    // Set ratio 8:3 awal
+    m_overallSplitter->setStretchFactor(0, 8);
+    m_overallSplitter->setStretchFactor(1, 3);
 
     monitorLayout->addWidget(m_overallSplitter);
     m_mainTabs->addTab(monitoringTab, "Monitoring");
 
-    // Placeholder for other tabs
-    m_mainTabs->addTab(new QLabel("Seismic Event"), "Seismic Event");
+    // ========== TAB SEISMIC EVENT ==========
+    m_seismicEventTable = new SeismicEventTable();
+    m_mainTabs->addTab(m_seismicEventTable, "Seismic Event");
+
+    // ========== TAB SIMULATION ==========
     m_mainTabs->addTab(new QLabel("Simulation"), "Simulation");
 
     setCentralWidget(m_mainTabs);
-
-    // Simpan referensi sub-tab "Peta" untuk transisi
-    m_mapTab = bottomLeftBox->widget(0);
 }
 
 void MainWindow::onTabChanged(int index) {
-    if (index != 0) return; // Hanya tangani tab "Monitoring"
+    // Bisa digunakan untuk logic tab-level
+}
 
-    QTabWidget *subTabs = qobject_cast<QTabWidget*>(m_leftPanel->widget(1)); // Side panel bawah
-    if (!subTabs) return;
-
-    int currentSubIndex = subTabs->currentIndex();
-
-    if (currentSubIndex == 0) { // Tab "Peta" aktif
-        m_mainPanelTopLeft->setVisible(true); // Tampilkan main panel atas
-        m_rightPanel->setVisible(true);       // Tampilkan panel kanan
+void MainWindow::onSubTabChanged(int index) {
+    if (index == 0) { // Tab "Peta" aktif
+        animatePanelVisibility(true);
     } else { // Sub-tab lain aktif
-        m_mainPanelTopLeft->setVisible(false); // Hilangkan main panel atas (transisi ke atas)
-        m_rightPanel->setVisible(false);       // Hilangkan panel kanan (transisi ke samping/kanan)
+        animatePanelVisibility(false);
     }
+}
+
+void MainWindow::animatePanelVisibility(bool show) {
+    // Dapatkan ukuran sekarang
+    QList<int> sizes = m_overallSplitter->sizes();
+    int totalWidth = sizes[0] + sizes[1];
+    
+    if (show) {
+        // Kembalikan ke ratio 8:3
+        int leftTarget = totalWidth * 8 / 11;
+        int rightTarget = totalWidth * 3 / 11;
+        
+        // Animasi smooth dengan QPropertyAnimation
+        animateSplitter(m_overallSplitter, {leftTarget, rightTarget}, 300);
+        
+        // Tampilkan main panel dengan fade-in
+        m_mainPanelTopLeft->show();
+        m_rightPanel->show();
+        
+    } else {
+        // Sembunyikan panel kanan dan expand panel kiri
+        animateSplitter(m_overallSplitter, {totalWidth, 0}, 300);
+        
+        // Sembunyikan main panel atas
+        m_mainPanelTopLeft->hide();
+    }
+}
+
+void MainWindow::animateSplitter(QSplitter *splitter, QList<int> targetSizes, int duration) {
+    QList<int> currentSizes = splitter->sizes();
+    
+    auto *animation = new QPropertyAnimation(this, "splitterSizes");
+    animation->setDuration(duration);
+    animation->setStartValue(currentSizes);
+    animation->setEndValue(targetSizes);
+    animation->setEasingCurve(QEasingCurve::InOutCubic);
+    
+    connect(animation, &QPropertyAnimation::valueChanged, this, [splitter](const QVariant &value) {
+        splitter->setSizes(value.value<QList<int>>());
+    });
+    
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+QList<int> MainWindow::splitterSizes() const {
+    return m_overallSplitter->sizes();
+}
+
+void MainWindow::setSplitterSizes(const QList<int> &sizes) {
+    m_overallSplitter->setSizes(sizes);
 }
 
 void MainWindow::onThemeChanged(const QString &themeName) {
@@ -148,7 +199,8 @@ void MainWindow::loadTheme(const QString &themeName) {
     QFile file(fileName);
     if (file.open(QIODevice::ReadOnly)) {
         QTextStream stream(&file);
-        qApp->setStyleSheet(stream.readAll());
+        QString styleSheet = stream.readAll();
+        qApp->setStyleSheet(styleSheet);
         file.close();
     } else {
         qApp->setStyleSheet("");
