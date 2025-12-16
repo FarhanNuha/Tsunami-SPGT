@@ -1,0 +1,49 @@
+QMainWindow {
+    background-color: #F9F8F6;
+}
+
+QMenuBar {
+    background-color: #EFE9E3;
+    color: #37353E;
+    spacing: 3px;
+}
+
+QMenuBar::item {
+    padding: 5px 10px;
+    background: transparent;
+}
+
+QMenuBar::item:selected {
+    background: #D9CFC7;
+}
+
+QStatusBar {
+    background-color: #EFE9E3;
+    color: #37353E;
+}
+
+QTabWidget::pane {
+    border: 1px solid #EFE9E3;
+    background: #F9F8F6;
+}
+
+QTabBar::tab {
+    background: #EFE9E3;
+    color: #37353E;
+    padding: 8px;
+    margin: 2px;
+}
+
+QTabBar::tab:selected {
+    background: #D9CFC7;
+}
+
+QSplitter::handle {
+    background: #C9B59C;
+}
+
+QLabel {
+    background-color: #F9F8F6;
+    color: #37353E;
+    font-size: 14px;
+}

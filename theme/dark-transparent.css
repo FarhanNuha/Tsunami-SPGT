@@ -1,0 +1,40 @@
+QMainWindow {
+    background-color: rgba(55, 53, 62, 200);
+}
+
+QMenuBar {
+    background-color: rgba(68, 68, 78, 200);
+    color: #D3DAD9;
+    spacing: 3px;
+}
+
+QStatusBar {
+    background-color: rgba(68, 68, 78, 200);
+    color: #D3DAD9;
+}
+
+QTabWidget::pane {
+    border: 1px solid rgba(68, 68, 78, 200);
+    background: rgba(55, 53, 62, 200);
+}
+
+QTabBar::tab {
+    background: rgba(68, 68, 78, 200);
+    color: #D3DAD9;
+    padding: 8px;
+    margin: 2px;
+}
+
+QTabBar::tab:selected {
+    background: rgba(113, 90, 90, 200);
+}
+
+QSplitter::handle {
+    background: rgba(113, 90, 90, 200);
+}
+
+QLabel {
+    background-color: rgba(55, 53, 62, 200);
+    color: #D3DAD9;
+    font-size: 14px;
+}
