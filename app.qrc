@@ -6,13 +6,6 @@
         <file>resources/theme/dark-transparent.css</file>
         <file>resources/theme/light-transparent.css</file>
     </qresource>
-    
-    <qresource prefix="/map">
-        <file>resources/map/index.html</file>
-    </qresource>
-    
-    <qresource prefix="/tiles">
-        <!-- Jika kamu ingin menggunakan tiles offline, tambahkan di sini -->
-        <!-- Untuk sekarang kita menggunakan online tiles -->
+    <qresource prefix="/maps">
     </qresource>
 </RCC>

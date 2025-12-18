@@ -4,6 +4,7 @@
 #include <QHeaderView>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QSqlRecord>
 #include <QMessageBox>
 #include <QDebug>
 
@@ -69,7 +70,7 @@ void SeismicEventTable::setupDatabase() {
     m_database.setHostName("localhost");
     m_database.setDatabaseName("tsunami_data");
     m_database.setUserName("farhan");
-    m_database.setPassword(""); // Isi password jika ada
+    m_database.setPassword("farhan"); // Isi password jika ada
     
     if (connectToDatabase()) {
         setupTableView();

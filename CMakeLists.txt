@@ -7,11 +7,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Find Qt packages
+# Find Qt packages (tanpa WebEngine)
 find_package(Qt6 REQUIRED COMPONENTS 
     Core 
     Widgets 
-    WebEngineWidgets
     Sql
 )
 
@@ -50,7 +49,6 @@ qt_add_executable(bismillah
 target_link_libraries(bismillah PRIVATE 
     Qt6::Core 
     Qt6::Widgets
-    Qt6::WebEngineWidgets
     Qt6::Sql
 )
 

@@ -1,0 +1,21 @@
+QMainWindow, QWidget {
+    background-color: rgba(43, 43, 43, 230);
+    color: #e0e0e0;
+}
+
+QMenuBar {
+    background-color: rgba(60, 60, 60, 230);
+    color: #e0e0e0;
+}
+
+QPushButton {
+    background-color: rgba(0, 120, 215, 220);
+    color: #ffffff;
+    border: none;
+    padding: 6px 16px;
+}
+
+QTableView {
+    background-color: rgba(43, 43, 43, 220);
+    color: #e0e0e0;
+}

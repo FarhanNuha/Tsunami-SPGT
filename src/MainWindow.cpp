@@ -12,7 +12,7 @@
 #include <QApplication>
 #include <QFile>
 #include <QTextStream>
-#include <QPropertyAnimation>
+#include <QVariantAnimation>
 #include <QParallelAnimationGroup>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
@@ -121,6 +121,25 @@ void MainWindow::setupCentralWidget() {
     // ========== TAB SEISMIC EVENT ==========
     m_seismicEventTable = new SeismicEventTable();
     m_mainTabs->addTab(m_seismicEventTable, "Seismic Event");
+    
+    // Connect seismic table dengan map view
+    connect(m_seismicEventTable, &SeismicEventTable::eventSelected,
+            this, [this](int id, double lat, double lon, double magnitude) {
+        // Switch ke tab Monitoring
+        m_mainTabs->setCurrentIndex(0);
+        
+        // Switch ke sub-tab Peta
+        m_bottomLeftTabs->setCurrentIndex(0);
+        
+        // Center map ke lokasi event
+        m_mapView->setCenter(lat, lon);
+        
+        // Highlight atau zoom ke marker
+        statusBar()->showMessage(
+            QString("Event ID %1: M%2 at (%3, %4)")
+                .arg(id).arg(magnitude, 0, 'f', 1).arg(lat, 0, 'f', 4).arg(lon, 0, 'f', 4)
+        );
+    });
 
     // ========== TAB SIMULATION ==========
     m_mainTabs->addTab(new QLabel("Simulation"), "Simulation");
@@ -169,13 +188,15 @@ void MainWindow::animatePanelVisibility(bool show) {
 void MainWindow::animateSplitter(QSplitter *splitter, QList<int> targetSizes, int duration) {
     QList<int> currentSizes = splitter->sizes();
     
-    auto *animation = new QPropertyAnimation(this, "splitterSizes");
+    // QPropertyAnimation tidak support QList<int> secara langsung
+    // Kita gunakan QVariantAnimation sebagai alternatif
+    auto *animation = new QVariantAnimation(this);
     animation->setDuration(duration);
-    animation->setStartValue(currentSizes);
-    animation->setEndValue(targetSizes);
+    animation->setStartValue(QVariant::fromValue(currentSizes));
+    animation->setEndValue(QVariant::fromValue(targetSizes));
     animation->setEasingCurve(QEasingCurve::InOutCubic);
     
-    connect(animation, &QPropertyAnimation::valueChanged, this, [splitter](const QVariant &value) {
+    connect(animation, &QVariantAnimation::valueChanged, this, [splitter](const QVariant &value) {
         splitter->setSizes(value.value<QList<int>>());
     });
     

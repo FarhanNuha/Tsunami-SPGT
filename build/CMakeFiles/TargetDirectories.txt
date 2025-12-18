@@ -1,0 +1,9 @@
+/home/farhan/git/my-program/build/CMakeFiles/bismillah.dir
+/home/farhan/git/my-program/build/CMakeFiles/edit_cache.dir
+/home/farhan/git/my-program/build/CMakeFiles/rebuild_cache.dir
+/home/farhan/git/my-program/build/CMakeFiles/list_install_components.dir
+/home/farhan/git/my-program/build/CMakeFiles/install.dir
+/home/farhan/git/my-program/build/CMakeFiles/install/local.dir
+/home/farhan/git/my-program/build/CMakeFiles/install/strip.dir
+/home/farhan/git/my-program/build/CMakeFiles/bismillah_autogen_timestamp_deps.dir
+/home/farhan/git/my-program/build/CMakeFiles/bismillah_autogen.dir
