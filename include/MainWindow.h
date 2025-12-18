@@ -8,17 +8,17 @@
 
 class MenuBar;
 class MapView;
-class SeismicEventTable;
+class DatabaseView;
+class FocalMechanismWidget;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
-    Q_PROPERTY(QList<int> splitterSizes READ splitterSizes WRITE setSplitterSizes)
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-    QList<int> splitterSizes() const;
-    void setSplitterSizes(const QList<int> &sizes);
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     void setupUI();
@@ -26,7 +26,7 @@ private:
     void setupCentralWidget();
     void loadTheme(const QString &themeName);
     void animatePanelVisibility(bool show);
-    void animateSplitter(QSplitter *splitter, QList<int> targetSizes, int duration);
+    void updateMainPanelHeight();
 
     MenuBar *m_menuBar;
     QTabWidget *m_mainTabs;
@@ -35,12 +35,13 @@ private:
     QSplitter *m_overallSplitter;
     QLabel *m_mainPanelTopLeft;
     MapView *m_mapView;
-    SeismicEventTable *m_seismicEventTable;
+    DatabaseView *m_databaseView;
 
 private slots:
     void onTabChanged(int index);
     void onSubTabChanged(int index);
     void onThemeChanged(const QString &themeName);
+    void onEventSelected(int eventId, double lat, double lon, double magnitude, const QString &eventInfo);
 };
 
 #endif // MAINWINDOW_H

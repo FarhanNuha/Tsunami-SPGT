@@ -1,11 +1,8 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
+<RCC>
     <qresource prefix="/theme">
-        <file>resources/theme/dark.css</file>
-        <file>resources/theme/light.css</file>
-        <file>resources/theme/dark-transparent.css</file>
-        <file>resources/theme/light-transparent.css</file>
-    </qresource>
-    <qresource prefix="/maps">
+        <file>theme/dark.css</file>
+        <file>theme/light.css</file>
+        <file>theme/dark-transparent.css</file>
+        <file>theme/light-transparent.css</file>
     </qresource>
 </RCC>

@@ -1,0 +1,100 @@
+/* Light Transparent Theme */
+QMainWindow {
+    background-color: rgba(245, 245, 245, 230);
+}
+
+QWidget {
+    background-color: transparent;
+    color: #2B2B2B;
+}
+
+QMenuBar {
+    background-color: rgba(255, 255, 255, 230);
+    color: #2B2B2B;
+    border-bottom: 1px solid rgba(204, 204, 204, 200);
+}
+
+QMenuBar::item {
+    padding: 5px 10px;
+    background-color: transparent;
+}
+
+QMenuBar::item:selected {
+    background-color: rgba(75, 110, 175, 230);
+    color: #FFFFFF;
+}
+
+QMenu {
+    background-color: rgba(255, 255, 255, 240);
+    color: #2B2B2B;
+    border: 1px solid rgba(204, 204, 204, 200);
+}
+
+QMenu::item:selected {
+    background-color: rgba(75, 110, 175, 230);
+    color: #FFFFFF;
+}
+
+QTabWidget::pane {
+    border: 1px solid rgba(204, 204, 204, 200);
+    background-color: rgba(245, 245, 245, 200);
+}
+
+QTabBar::tab {
+    background-color: rgba(224, 224, 224, 200);
+    color: #2B2B2B;
+    padding: 8px 15px;
+    border: 1px solid rgba(204, 204, 204, 200);
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background-color: rgba(255, 255, 255, 230);
+}
+
+QPushButton {
+    background-color: rgba(75, 110, 175, 230);
+    color: #FFFFFF;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+}
+
+QPushButton:hover {
+    background-color: rgba(90, 126, 192, 240);
+}
+
+QLineEdit {
+    background-color: rgba(255, 255, 255, 220);
+    color: #2B2B2B;
+    border: 1px solid rgba(204, 204, 204, 200);
+    padding: 5px;
+    border-radius: 3px;
+}
+
+QTableView {
+    background-color: rgba(255, 255, 255, 220);
+    alternate-background-color: rgba(245, 245, 245, 200);
+    color: #2B2B2B;
+    gridline-color: rgba(204, 204, 204, 200);
+    border: 1px solid rgba(204, 204, 204, 200);
+}
+
+QHeaderView::section {
+    background-color: rgba(224, 224, 224, 230);
+    color: #2B2B2B;
+    padding: 5px;
+    border: 1px solid rgba(204, 204, 204, 200);
+    font-weight: bold;
+}
+
+QStatusBar {
+    background-color: rgba(255, 255, 255, 230);
+    color: #2B2B2B;
+    border-top: 1px solid rgba(204, 204, 204, 200);
+}
+
+QLabel {
+    color: #2B2B2B;
+    background-color: transparent;
+}

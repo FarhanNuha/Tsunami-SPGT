@@ -3,11 +3,11 @@ project(bismillah)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
-# Find Qt packages (tanpa WebEngine)
+# Install Qt6 SQL PostgreSQL driver if not available
+# Run: sudo apt-get install libqt6sql6-psql
+
+# Find Qt6 packages
 find_package(Qt6 REQUIRED COMPONENTS 
     Core 
     Widgets 
@@ -22,7 +22,8 @@ set(SOURCES
     src/MainWindow.cpp
     src/MenuBar.cpp
     src/MapView.cpp
-    src/SeismicEventTable.cpp
+    src/DatabaseView.cpp
+    src/FocalMechanismWidget.cpp
 )
 
 # Header files
@@ -30,10 +31,11 @@ set(HEADERS
     include/MainWindow.h
     include/MenuBar.h
     include/MapView.h
-    include/SeismicEventTable.h
+    include/DatabaseView.h
+    include/FocalMechanismWidget.h
 )
 
-# Resources
+# Resource files
 set(RESOURCES
     app.qrc
 )
@@ -55,7 +57,7 @@ target_link_libraries(bismillah PRIVATE
 # Include directories
 target_include_directories(bismillah PRIVATE include)
 
-# Install
+# Install (optional)
 install(TARGETS bismillah
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

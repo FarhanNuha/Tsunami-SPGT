@@ -5,38 +5,18 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
-#include <QMap>
-#include <QPoint>
-#include <QPixmap>
+#include <QWheelEvent>
+#include <QMouseEvent>
 
-struct TileCoord {
-    int z, x, y;
-    
-    bool operator<(const TileCoord &other) const {
-        if (z != other.z) return z < other.z;
-        if (x != other.x) return x < other.x;
-        return y < other.y;
-    }
-};
-
-struct EarthquakeMarker {
-    int id;
-    double lat, lon, magnitude;
-    QString time;
-    QGraphicsEllipseItem *item;
-};
-
-class MapView : public QWidget {
+class MapView : public QGraphicsView {
     Q_OBJECT
 
 public:
     explicit MapView(QWidget *parent = nullptr);
-    ~MapView();
-
-    void addEarthquakeMarker(int id, double lat, double lon, double magnitude, const QString &time);
-    void clearMarkers();
-    void setCenter(double lat, double lon);
-    void setZoom(int zoom);
+    
+    void setMapDirectory(const QString &dirPath);
+    void setZoomLevel(int level);
+    void centerOnCoordinate(double lat, double lon);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -45,29 +25,20 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
-    void setupUI();
     void loadTiles();
     void updateVisibleTiles();
-    QPixmap loadTile(int z, int x, int y);
-    QPointF latLonToPixel(double lat, double lon, int zoom);
-    void updateMarkerPositions();
-    QColor getMagnitudeColor(double magnitude);
+    QString getTilePath(int zoom, int x, int y);
     
-    QGraphicsView *m_view;
     QGraphicsScene *m_scene;
-    
+    QString m_mapDirectory;
     int m_currentZoom;
-    double m_centerLat, m_centerLon;
-    QMap<QString, QGraphicsPixmapItem*> m_tileItems;
-    QList<EarthquakeMarker*> m_markers;
+    int m_maxZoom;
+    double m_scale;
     
-    // Pan/drag
     bool m_isPanning;
     QPoint m_lastPanPoint;
-    QPointF m_viewCenter;
-
-signals:
-    void markerClicked(int id, double lat, double lon, double magnitude);
+    
+    QMap<QString, QGraphicsPixmapItem*> m_tileCache;
 };
 
 #endif // MAPVIEW_H
