@@ -16,12 +16,12 @@ MapView::MapView(QWidget *parent)
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
     
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    setResizeAnchor(QGraphicsView::AnchorUnderMouse);
     
-    // Set default map directory
     setMapDirectory("maps");
 }
 
@@ -41,85 +41,107 @@ void MapView::loadTiles() {
     m_scene->clear();
     m_tileCache.clear();
     
-    // Load root tile
-    QString tilePath = m_mapDirectory + "/world.png";
-    QPixmap pixmap(tilePath);
+    // Load tiles based on current zoom level
+    QString basePath = m_mapDirectory + "/world.png";
+    QPixmap basePixmap(basePath);
     
-    if (pixmap.isNull()) {
-        // Create placeholder jika file tidak ada
-        pixmap = QPixmap(512, 256);
-        pixmap.fill(Qt::darkGray);
+    if (basePixmap.isNull()) {
+        // Create placeholder
+        basePixmap = QPixmap(512, 256);
+        basePixmap.fill(Qt::darkGray);
         
-        // Add text
-        QPainter painter(&pixmap);
+        QPainter painter(&basePixmap);
         painter.setPen(Qt::white);
         painter.setFont(QFont("Arial", 14));
-        painter.drawText(pixmap.rect(), Qt::AlignCenter, 
+        painter.drawText(basePixmap.rect(), Qt::AlignCenter, 
                         QString("Map tiles not found\nPlace world.png in '%1' directory").arg(m_mapDirectory));
     }
     
-    QGraphicsPixmapItem *item = m_scene->addPixmap(pixmap);
-    item->setPos(0, 0);
-    m_tileCache["world"] = item;
+    if (m_currentZoom == 0) {
+        // Zoom level 0: single tile
+        QGraphicsPixmapItem *item = m_scene->addPixmap(basePixmap);
+        item->setPos(0, 0);
+        m_tileCache["world"] = item;
+    } else {
+        // Higher zoom levels: load quadtree tiles
+        int tilesPerSide = std::pow(2, m_currentZoom);
+        int baseTileWidth = basePixmap.width();
+        int baseTileHeight = basePixmap.height();
+        
+        for (int y = 0; y < tilesPerSide; y++) {
+            for (int x = 0; x < tilesPerSide; x++) {
+                QString tilePath = getTilePath(m_currentZoom, x, y);
+                QPixmap tilePixmap(tilePath);
+                
+                if (tilePixmap.isNull()) {
+                    // Use scaled portion of base map as fallback
+                    int srcX = x * baseTileWidth / tilesPerSide;
+                    int srcY = y * baseTileHeight / tilesPerSide;
+                    int srcW = baseTileWidth / tilesPerSide;
+                    int srcH = baseTileHeight / tilesPerSide;
+                    
+                    tilePixmap = basePixmap.copy(srcX, srcY, srcW, srcH);
+                }
+                
+                QGraphicsPixmapItem *item = m_scene->addPixmap(tilePixmap);
+                item->setPos(x * tilePixmap.width(), y * tilePixmap.height());
+                
+                QString key = QString("%1_%2_%3").arg(m_currentZoom).arg(x).arg(y);
+                m_tileCache[key] = item;
+            }
+        }
+    }
     
     m_scene->setSceneRect(m_scene->itemsBoundingRect());
-    fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
+    
+    // Fit in view on first load
+    if (m_currentZoom == 0) {
+        fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
+    }
 }
 
 QString MapView::getTilePath(int zoom, int x, int y) {
-    // Konversi x,y ke format quadtree string
-    // Untuk simplifikasi, gunakan format world{zoom}_{x}_{y}.png
-    // atau ikuti pattern world[0-3]+ yang ada
+    // Convert x,y coordinates to quadtree key
+    QString quadKey;
     
-    if (zoom == 1) {
-        // Level 1: world0.png, world1.png, world2.png, world3.png
-        int index = y * 2 + x;
-        return QString("%1/world%2.png").arg(m_mapDirectory).arg(index);
-    } else if (zoom == 2) {
-        // Level 2: world00.png, world01.png, ..., world33.png
-        int firstDigit = (y / 2) * 2 + (x / 2);
-        int secondDigit = (y % 2) * 2 + (x % 2);
-        return QString("%1/world%2%3.png").arg(m_mapDirectory).arg(firstDigit).arg(secondDigit);
-    } else if (zoom == 3) {
-        // Level 3: world000.png, ..., world333.png
-        QString quadKey;
-        for (int i = 0; i < zoom; i++) {
-            int mask = 1 << (zoom - i - 1);
-            int digit = 0;
-            if (x & mask) digit += 1;
-            if (y & mask) digit += 2;
-            quadKey += QString::number(digit);
-        }
-        return QString("%1/world%2.png").arg(m_mapDirectory).arg(quadKey);
-    } else if (zoom == 4) {
-        // Level 4: world0000.png, ..., world3333.png
-        QString quadKey;
-        for (int i = 0; i < zoom; i++) {
-            int mask = 1 << (zoom - i - 1);
-            int digit = 0;
-            if (x & mask) digit += 1;
-            if (y & mask) digit += 2;
-            quadKey += QString::number(digit);
-        }
-        return QString("%1/world%2.png").arg(m_mapDirectory).arg(quadKey);
+    for (int i = zoom - 1; i >= 0; i--) {
+        int digit = 0;
+        int mask = 1 << i;
+        
+        if (x & mask) digit += 1;
+        if (y & mask) digit += 2;
+        
+        quadKey += QString::number(digit);
     }
     
-    return QString("%1/world.png").arg(m_mapDirectory);
+    return QString("%1/world%2.png").arg(m_mapDirectory).arg(quadKey);
 }
 
 void MapView::centerOnCoordinate(double lat, double lon) {
-    // Konversi lat/lon ke koordinat scene
-    // Implementasi Web Mercator projection
-    double x = (lon + 180.0) / 360.0 * m_scene->width();
+    // Web Mercator projection
+    double x = (lon + 180.0) / 360.0;
     double latRad = lat * M_PI / 180.0;
     double mercN = std::log(std::tan((M_PI / 4.0) + (latRad / 2.0)));
-    double y = (1.0 - mercN / M_PI) / 2.0 * m_scene->height();
+    double y = (1.0 - mercN / M_PI) / 2.0;
     
-    centerOn(x, y);
+    // Convert to scene coordinates
+    QRectF sceneRect = m_scene->sceneRect();
+    double sceneX = x * sceneRect.width();
+    double sceneY = y * sceneRect.height();
+    
+    // Add marker at location
+    QGraphicsEllipseItem *marker = m_scene->addEllipse(
+        sceneX - 5, sceneY - 5, 10, 10,
+        QPen(Qt::red, 2),
+        QBrush(Qt::red)
+    );
+    marker->setZValue(1000); // Always on top
+    
+    centerOn(sceneX, sceneY);
 }
 
 void MapView::wheelEvent(QWheelEvent *event) {
-    // Zoom dengan scroll wheel menggunakan scale transform
+    // Simple smooth zoom tanpa dynamic tile loading
     const double scaleFactor = 1.15;
     
     if (event->angleDelta().y() > 0) {
@@ -149,7 +171,6 @@ void MapView::mouseMoveEvent(QMouseEvent *event) {
         QPoint delta = event->pos() - m_lastPanPoint;
         m_lastPanPoint = event->pos();
         
-        // Pan view
         horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
         verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
     }
@@ -165,6 +186,5 @@ void MapView::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void MapView::updateVisibleTiles() {
-    // Optimisasi: hanya load tiles yang visible
-    // Implementasi di sini jika diperlukan untuk performa
+    // TODO: Implement tile culling for performance
 }

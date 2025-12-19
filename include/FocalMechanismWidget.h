@@ -12,7 +12,7 @@ public:
     explicit FocalMechanismWidget(QWidget *parent = nullptr);
     
     void setEventData(const QString &eventId, double lat, double lon, double magnitude,
-                     int strike, int dip, int slip, const QString &originTime);
+                     int strike, int dip, int slip, int depth, const QString &originTime);
     void clearData();
 
 protected:
@@ -28,7 +28,9 @@ private:
     int m_strike;
     int m_dip;
     int m_slip;
+    int m_depth;
     QString m_originTime;
+    QString m_location;
     bool m_hasData;
 };
 

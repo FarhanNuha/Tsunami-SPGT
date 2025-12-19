@@ -7,6 +7,7 @@
 #include <QSqlRecord>
 #include <QMessageBox>
 #include <QDateTime>
+#include <QDate>
 #include <QDebug>
 
 DatabaseView::DatabaseView(QWidget *parent) 
@@ -47,7 +48,7 @@ void DatabaseView::setupUI() {
     m_startDateEdit = new QDateEdit();
     m_startDateEdit->setCalendarPopup(true);
     m_startDateEdit->setDisplayFormat("dd MMM yyyy");
-    m_startDateEdit->setDate(QDate::currentDate().addDays(-1)); // Default: 1 hari terakhir
+    m_startDateEdit->setDate(QDate::currentDate().addDays(-1));
     dateLayout->addWidget(m_startDateEdit);
     
     dateLayout->addWidget(new QLabel("to"));
@@ -64,7 +65,7 @@ void DatabaseView::setupUI() {
     
     mainLayout->addLayout(dateLayout);
     
-    // Bottom toolbar dengan tombol Select
+    // Bottom toolbar
     auto *bottomLayout = new QHBoxLayout();
     
     m_statusLabel = new QLabel("Not connected");
@@ -81,8 +82,7 @@ void DatabaseView::setupUI() {
     // Connect signals
     connect(m_btnSelect, &QPushButton::clicked, this, &DatabaseView::onSelectEvent);
     connect(m_btnFilter, &QPushButton::clicked, this, &DatabaseView::onDateRangeChanged);
-    connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
-            this, &DatabaseView::onSelectionChanged);
+    connect(m_tableView, &QTableView::doubleClicked, this, &DatabaseView::onTableDoubleClicked);
 }
 
 void DatabaseView::setupDatabase() {
@@ -141,9 +141,8 @@ void DatabaseView::loadDataWithDateFilter(const QDate &startDate, const QDate &e
     
     m_model = new QSqlQueryModel(this);
     
-    // Query dengan urutan kolom yang diinginkan dan filter tanggal
     QString queryStr = QString(
-        "SELECT event_id, origintime, magnitudo, latitude, longitude, strike, dip, slip "
+        "SELECT event_id, origintime, magnitudo, latitude, longitude, depth_km, strike, dip, slip "
         "FROM sumber_tsunami "
         "WHERE origintime BETWEEN '%1 00:00:00' AND '%2 23:59:59' "
         "ORDER BY origintime DESC"
@@ -158,20 +157,24 @@ void DatabaseView::loadDataWithDateFilter(const QDate &startDate, const QDate &e
         return;
     }
     
-    // Set header labels sesuai urutan baru
     m_model->setHeaderData(0, Qt::Horizontal, "Event ID");
     m_model->setHeaderData(1, Qt::Horizontal, "Origin Time (UTC)");
     m_model->setHeaderData(2, Qt::Horizontal, "Magnitude");
     m_model->setHeaderData(3, Qt::Horizontal, "Latitude");
     m_model->setHeaderData(4, Qt::Horizontal, "Longitude");
-    m_model->setHeaderData(5, Qt::Horizontal, "Strike");
-    m_model->setHeaderData(6, Qt::Horizontal, "Dip");
-    m_model->setHeaderData(7, Qt::Horizontal, "Slip");
+    m_model->setHeaderData(5, Qt::Horizontal, "Depth (km)");
+    m_model->setHeaderData(6, Qt::Horizontal, "Strike");
+    m_model->setHeaderData(7, Qt::Horizontal, "Dip");
+    m_model->setHeaderData(8, Qt::Horizontal, "Slip");
     
     m_tableView->setModel(m_model);
     m_tableView->resizeColumnsToContents();
     m_tableView->horizontalHeader()->setSortIndicatorShown(true);
     m_tableView->horizontalHeader()->setSectionsClickable(true);
+    
+    // Connect selection model after setting model
+    connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
+            this, &DatabaseView::onSelectionChanged);
     
     int rowCount = m_model->rowCount();
     m_statusLabel->setText(QString("Loaded %1 events from %2 to %3")
@@ -190,6 +193,11 @@ void DatabaseView::onSelectionChanged(const QItemSelection &selected, const QIte
     m_btnSelect->setEnabled(!selected.isEmpty());
 }
 
+void DatabaseView::onTableDoubleClicked(const QModelIndex &index) {
+    Q_UNUSED(index);
+    onSelectEvent();
+}
+
 void DatabaseView::onSelectEvent() {
     QModelIndexList selected = m_tableView->selectionModel()->selectedRows();
     if (selected.isEmpty()) {
@@ -199,17 +207,16 @@ void DatabaseView::onSelectEvent() {
     
     int row = selected.first().row();
     
-    // Get event data (sesuai urutan kolom baru)
-    m_selectedEventId = m_model->data(m_model->index(row, 0)).toString(); // event_id
+    m_selectedEventId = m_model->data(m_model->index(row, 0)).toString();
     QDateTime originTime = m_model->data(m_model->index(row, 1)).toDateTime();
     double mag = m_model->data(m_model->index(row, 2)).toDouble();
     double lat = m_model->data(m_model->index(row, 3)).toDouble();
     double lon = m_model->data(m_model->index(row, 4)).toDouble();
-    int strike = m_model->data(m_model->index(row, 5)).toInt();
-    int dip = m_model->data(m_model->index(row, 6)).toInt();
-    int slip = m_model->data(m_model->index(row, 7)).toInt();
+    int depth = m_model->data(m_model->index(row, 5)).toInt();
+    int strike = m_model->data(m_model->index(row, 6)).toInt();
+    int dip = m_model->data(m_model->index(row, 7)).toInt();
+    int slip = m_model->data(m_model->index(row, 8)).toInt();
     
-    // Create event info string untuk display
     QString eventInfo = QString("Event ID: %1\nMagnitude %2 | %3\nLat: %4°, Lon: %5°")
                        .arg(m_selectedEventId)
                        .arg(mag, 0, 'f', 1)
@@ -217,11 +224,11 @@ void DatabaseView::onSelectEvent() {
                        .arg(lat, 0, 'f', 4)
                        .arg(lon, 0, 'f', 4);
     
-    emit eventSelected(m_selectedEventId, lat, lon, mag, strike, dip, slip, eventInfo);
+    emit eventSelected(m_selectedEventId, lat, lon, mag, depth, strike, dip, slip, eventInfo);
     
     m_statusLabel->setText(QString("Selected event: %1").arg(m_selectedEventId));
 }
 
-int DatabaseView::getSelectedEventId() const {
-    return m_selectedEventId.toInt();
+QString DatabaseView::getSelectedEventId() const {
+    return m_selectedEventId;
 }

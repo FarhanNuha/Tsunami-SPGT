@@ -33,7 +33,7 @@ private:
     QTabWidget *m_bottomLeftTabs;
     QSplitter *m_rightPanel;
     QSplitter *m_overallSplitter;
-    QLabel *m_mainPanelTopLeft;
+    FocalMechanismWidget *m_focalMechWidget;
     MapView *m_mapView;
     DatabaseView *m_databaseView;
 
@@ -41,7 +41,8 @@ private slots:
     void onTabChanged(int index);
     void onSubTabChanged(int index);
     void onThemeChanged(const QString &themeName);
-    void onEventSelected(int eventId, double lat, double lon, double magnitude, const QString &eventInfo);
+    void onEventSelected(const QString &eventId, double lat, double lon, double magnitude,
+                        int depth, int strike, int dip, int slip, const QString &eventInfo);
 };
 
 #endif // MAINWINDOW_H

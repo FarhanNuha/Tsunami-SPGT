@@ -4,9 +4,10 @@
 #include <QWidget>
 #include <QTableView>
 #include <QSqlDatabase>
-#include <QSqlTableModel>
+#include <QSqlQueryModel>
 #include <QPushButton>
 #include <QLabel>
+#include <QDateEdit>
 #include <QItemSelection>
 
 class DatabaseView : public QWidget {
@@ -18,30 +19,35 @@ public:
     
     bool connectToDatabase();
     void loadData();
-    void updateDateRange();
-    int getSelectedEventId() const;
+    void loadDataWithDateFilter(const QDate &startDate, const QDate &endDate);
+    QString getSelectedEventId() const;
 
 signals:
-    void eventSelected(int eventId, double lat, double lon, double magnitude, const QString &eventInfo);
+    void eventSelected(const QString &eventId, double lat, double lon, double magnitude, 
+                      int depth, int strike, int dip, int slip, const QString &eventInfo);
 
 private slots:
     void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
     void onSelectEvent();
+    void onDateRangeChanged();
+    void onTableDoubleClicked(const QModelIndex &index);
 
 private:
     void setupUI();
     void setupDatabase();
     
     QTableView *m_tableView;
-    QSqlTableModel *m_model;
+    QSqlQueryModel *m_model;
     QSqlDatabase m_db;
     
     QPushButton *m_btnSelect;
     QLabel *m_statusLabel;
-    QLabel *m_dateRangeLabel;
+    QDateEdit *m_startDateEdit;
+    QDateEdit *m_endDateEdit;
+    QPushButton *m_btnFilter;
     
     bool m_isConnected;
-    int m_selectedEventId;
+    QString m_selectedEventId;
 };
 
 #endif // DATABASEVIEW_H

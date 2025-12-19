@@ -242,12 +242,12 @@ void MainWindow::animatePanelVisibility(bool show) {
 }
 
 void MainWindow::onEventSelected(const QString &eventId, double lat, double lon, double magnitude,
-                                int strike, int dip, int slip, const QString &eventInfo) {
+                                int depth, int strike, int dip, int slip, const QString &eventInfo) {
     // Extract origin time dari eventInfo
     QString originTime = eventInfo.split("\n")[1].replace("Magnitude ", "").split(" | ")[1];
     
     // Update focal mechanism widget
-    m_focalMechWidget->setEventData(eventId, lat, lon, magnitude, strike, dip, slip, originTime);
+    m_focalMechWidget->setEventData(eventId, lat, lon, magnitude, strike, dip, slip, depth, originTime);
     
     // Center map pada lokasi event
     m_mapView->centerOnCoordinate(lat, lon);
